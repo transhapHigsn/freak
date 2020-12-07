@@ -33,7 +33,7 @@ def base_flow(**wkwargs: Any) -> DECORATOR_RESPONSE:
     return wrapper
 
 
-def function_locator(file_path: str, decorator: str) -> LIST_OF_TUPLE:
+def locator(file_path: str, decorator: str, step: int = 1) -> LIST_OF_TUPLE:
     decorators = []
     with open(file=file_path, mode="rt") as file:
         tree = parse(source=file.read(), filename=file_path)
@@ -50,7 +50,8 @@ def function_locator(file_path: str, decorator: str) -> LIST_OF_TUPLE:
                     for kw in deco.keywords  # type: ignore
                     if kw.arg == "order"
                 }
-                decorators.append((deco_kws.get("order", -1), part.name))
+                if deco_kws["order"] >= step:
+                    decorators.append((deco_kws["order"], part.name))
 
     return decorators
 
