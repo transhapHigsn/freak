@@ -1,0 +1,10 @@
+# This file contains values from Cookiecutter
+
+default_context:
+  project_name: "freak"
+  project_description: "Freak is a data flow engine."
+  organization: "transhapHigsn"
+  license: "MIT"
+  version: "0.1.0"
+  github_name: "transhaphigsn"
+  email: "fet.prashantsingh@gmail.com"
