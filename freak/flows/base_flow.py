@@ -4,11 +4,16 @@ from ast import FunctionDef, parse
 from functools import wraps
 from inspect import isfunction
 
+FUNC_TYPE = Callable[..., Dict[str, Any]]
+FIRST_WRAPPER_RESPONSE = FUNC_TYPE
+DECORATOR_RESPONSE = Callable[[FUNC_TYPE], FUNC_TYPE]
+LIST_OF_TUPLE = List[Tuple[int, str]]
 
-def base_flow(**wkwargs) -> Callable:
-    def wrapper(func: Callable) -> Callable:
+
+def base_flow(**wkwargs: Any) -> DECORATOR_RESPONSE:
+    def wrapper(func: FUNC_TYPE) -> FIRST_WRAPPER_RESPONSE:
         @wraps(func)
-        def caller(*args, **kwargs) -> Dict[str, Any]:
+        def caller(*args: Any, **kwargs: Any) -> Dict[str, Any]:
             # pre hook runs on func args & kwargs.
             pre_hook = wkwargs.get("pre_hook")
             if pre_hook:
@@ -28,7 +33,7 @@ def base_flow(**wkwargs) -> Callable:
     return wrapper
 
 
-def function_locator(file_path: str, decorator: str) -> List[Tuple[int, str]]:
+def function_locator(file_path: str, decorator: str) -> LIST_OF_TUPLE:
     decorators = []
     with open(file=file_path, mode="rt") as file:
         tree = parse(source=file.read(), filename=file_path)
@@ -37,12 +42,12 @@ def function_locator(file_path: str, decorator: str) -> List[Tuple[int, str]]:
                 continue
 
             for deco in part.decorator_list:
-                if deco.func.id != decorator:
+                if deco.func.id != decorator:  # type: ignore
                     continue
 
                 deco_kws = {
                     kw.arg: kw.value.value
-                    for kw in deco.keywords
+                    for kw in deco.keywords  # type: ignore
                     if kw.arg == "order"
                 }
                 decorators.append((deco_kws.get("order", -1), part.name))
@@ -51,11 +56,11 @@ def function_locator(file_path: str, decorator: str) -> List[Tuple[int, str]]:
 
 
 def organizer(
-    module: object, funcs: List[Tuple[int, str]]
-) -> List[Tuple[int, str, callable]]:
-    funcs = [
+    module: object, funcs: LIST_OF_TUPLE
+) -> List[Tuple[int, str, FUNC_TYPE]]:
+    func_mapping = [
         (order, func, module.__dict__[func])
         for order, func in funcs
         if isfunction(object=module.__dict__[func])
     ]
-    return sorted(funcs, key=lambda x: x[0])
+    return sorted(func_mapping, key=lambda x: x[0])
