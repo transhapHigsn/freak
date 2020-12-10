@@ -1,30 +1,33 @@
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, List, Tuple
 
 from ast import FunctionDef, parse
 from functools import wraps
 from inspect import isfunction
 
-FUNC_TYPE = Callable[..., Dict[str, Any]]
-FIRST_WRAPPER_RESPONSE = FUNC_TYPE
-DECORATOR_RESPONSE = Callable[[FUNC_TYPE], FUNC_TYPE]
-LIST_OF_TUPLE = List[Tuple[int, str]]
+from freak.models import RequestContext, ResponseContext
+from freak.types import (
+    DECORATOR_RESPONSE,
+    FIRST_WRAPPER_RESPONSE,
+    FUNC_TYPE,
+    LIST_OF_TUPLE,
+)
 
 
 def base_flow(**wkwargs: Any) -> DECORATOR_RESPONSE:
     def wrapper(func: FUNC_TYPE) -> FIRST_WRAPPER_RESPONSE:
         @wraps(func)
-        def caller(*args: Any, **kwargs: Any) -> Dict[str, Any]:
-            # pre hook runs on func args & kwargs.
+        def caller(ctx: RequestContext) -> ResponseContext:
             pre_hook = wkwargs.get("pre_hook")
             if pre_hook:
-                pre_hook(*args, **kwargs)
+                pre_hook(ctx=ctx)
 
-            response = func(*args, **kwargs)
+            response = func(ctx=ctx)  # type: ignore
 
+            # response is actually a context object,
             # post hook runs on response of function.
             post_hook = wkwargs.get("post_hook")
             if post_hook:
-                post_hook(**response)
+                post_hook(ctx=ctx)
 
             return response
 

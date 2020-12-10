@@ -1,22 +1,37 @@
-from typing import Dict, Tuple, Any
-
 from freak.engine import butler, prosecutioner
 from freak.flows.base_flow import base_flow, locator, organizer
+from freak.models import RequestContext, ResponseContext
 
 
 @base_flow(name="func_one", order=1)
-def func_one(a: int, b: int) -> Dict[str, int]:
-    return {"a": a + 1, "b": b + 2}
+def func_one(ctx: RequestContext) -> ResponseContext:
+    a = ctx.input["a"]
+    b = ctx.input["b"]
+    return ResponseContext(
+        input=ctx.input, output={"a": a + 1, "b": b + 2}, success=True
+    )
 
 
 @base_flow(name="func_two", order=2)
-def func_two(a: int, b: int) -> Dict[str, int]:
-    return {"a": a + 2, "b": b + 3}
+def func_two(ctx: RequestContext) -> ResponseContext:
+    a = ctx.input["a"]
+    b = ctx.input["b"]
+    return ResponseContext(
+        input=ctx.input,
+        output={"a": a + 2, "b": b + 3},
+        success=True,
+    )
 
 
 @base_flow(name="func_three", order=3)
-def func_three(a: int, b: int) -> Dict[str, int]:
-    return {"a": a + 3, "b": b + 4}
+def func_three(ctx: RequestContext) -> ResponseContext:
+    a = ctx.input["a"]
+    b = ctx.input["b"]
+    return ResponseContext(
+        input=ctx.input,
+        output={"a": a + 3, "b": b + 4},
+        success=True,
+    )
 
 
 def test_base_flow():
@@ -38,17 +53,15 @@ def test_base_flow():
 
 
 def test_base_flow_prosecutioner():
-    func_args: Tuple[Any, ...] = (4, 7)
-    func_kwargs: Dict[Any, Any] = {}
-
     output = prosecutioner(
         module_name=__name__,
         decorator_name="base_flow",
-        func_args=func_args,
-        func_kwargs=func_kwargs,
+        ctx=RequestContext(
+            input={"a": 4, "b": 7},
+        ),
     )
 
     assert len(output) == 3
-    assert output[0] == {"a": 5, "b": 9}
-    assert output[1] == {"a": 6, "b": 10}
-    assert output[2] == {"a": 7, "b": 11}
+    assert output[0].output == {"a": 5, "b": 9}
+    assert output[1].output == {"a": 6, "b": 10}
+    assert output[2].output == {"a": 7, "b": 11}

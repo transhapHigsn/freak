@@ -1,11 +1,10 @@
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from importlib import import_module
 from inspect import getabsfile
 
-FUNC_TYPE = Callable[..., Dict[str, Any]]
-LOCATOR_TYPE = Callable[..., List[Tuple[int, str]]]
-ORGANIZER_TYPE = Callable[..., List[Tuple[int, str, FUNC_TYPE]]]
+from freak.models import RequestContext
+from freak.types import ENGINE_RESPONSE, FUNC_TYPE, LOCATOR_TYPE, ORGANIZER_TYPE
 
 
 def factory(flow_name: str) -> Dict[str, Union[LOCATOR_TYPE, ORGANIZER_TYPE]]:
@@ -37,10 +36,9 @@ def butler(
 def prosecutioner(
     module_name: str,
     decorator_name: str,
-    func_args: Tuple[Any, ...],
-    func_kwargs: Dict[str, Any],
+    ctx: RequestContext,
     step: Optional[int] = None,
-) -> List[Dict[str, Any]]:
+) -> ENGINE_RESPONSE:
     tools = factory(flow_name=decorator_name)
     step = step or 1
     funcs = butler(
@@ -51,4 +49,13 @@ def prosecutioner(
         step=step,
     )
 
-    return [func(*func_args, **func_kwargs) for _, _, func in funcs]
+    responses = []
+    for _, _, func in funcs:
+        resp_ctx = func(ctx=ctx)  # type: ignore
+        responses.append(resp_ctx)
+        if not resp_ctx.success:
+            break
+
+        ctx = RequestContext(input=resp_ctx.input)
+
+    return responses
