@@ -1,10 +1,10 @@
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from importlib import import_module
 from inspect import getabsfile
 
-from freak.models import RequestContext
-from freak.types import ENGINE_RESPONSE, FUNC_TYPE, LOCATOR_TYPE, ORGANIZER_TYPE
+from freak.models import EngineResponse, RequestContext
+from freak.types import FUNC_TYPE, LOCATOR_TYPE, ORGANIZER_TYPE
 
 
 def factory(flow_name: str) -> Dict[str, Union[LOCATOR_TYPE, ORGANIZER_TYPE]]:
@@ -36,9 +36,9 @@ def butler(
 def prosecutioner(
     module_name: str,
     decorator_name: str,
-    ctx: RequestContext,
+    data: Dict[str, Any],
     step: Optional[int] = None,
-) -> ENGINE_RESPONSE:
+) -> EngineResponse:
     tools = factory(flow_name=decorator_name)
     step = step or 1
     funcs = butler(
@@ -50,12 +50,24 @@ def prosecutioner(
     )
 
     responses = []
-    for _, _, func in funcs:
+    last_successful_step, to_step = step, step
+    for order, name, func in funcs:
+        ctx = RequestContext(input=data, name=name, order=order)
+
         resp_ctx = func(ctx=ctx)  # type: ignore
         responses.append(resp_ctx)
+        to_step = order  # this will refer to last performed step.
         if not resp_ctx.success:
             break
 
-        ctx = RequestContext(input=resp_ctx.input)
+        data = resp_ctx.input
+        last_successful_step = (
+            order  # this will refer last successfully performed action.
+        )
 
-    return responses
+    return EngineResponse(
+        responses=responses,
+        from_step=step,
+        to_step=to_step,
+        last_successful_step=last_successful_step,
+    )
