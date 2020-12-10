@@ -61,9 +61,9 @@ def prosecutioner(
             break
 
         data = resp_ctx.input
-        last_successful_step = (
-            order  # this will refer last successfully performed action.
-        )
+
+        # this will refer last successfully performed action.
+        last_successful_step = order
 
     return EngineResponse(
         responses=responses,
