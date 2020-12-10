@@ -3,7 +3,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from importlib import import_module
 from inspect import getabsfile
 
-from freak.models import EngineResponse, RequestContext
+from freak.models.request import RequestContext
+from freak.models.response import EngineResponse
 from freak.types import FUNC_TYPE, LOCATOR_TYPE, ORGANIZER_TYPE
 
 
@@ -13,7 +14,6 @@ def factory(flow_name: str) -> Dict[str, Union[LOCATOR_TYPE, ORGANIZER_TYPE]]:
     return {
         "locator": module.__dict__["locator"],
         "organizer": module.__dict__["organizer"],
-        # "decorator": flow_module_name.split["."][-1] # decorator name should be same as file name.
     }
 
 

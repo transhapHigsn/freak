@@ -4,7 +4,8 @@ from ast import FunctionDef, parse
 from functools import wraps
 from inspect import isfunction
 
-from freak.models import RequestContext, ResponseContext
+from freak.models.request import RequestContext
+from freak.models.response import Response
 from freak.types import (
     DECORATOR_RESPONSE,
     FIRST_WRAPPER_RESPONSE,
@@ -16,7 +17,7 @@ from freak.types import (
 def base_flow(**wkwargs: Any) -> DECORATOR_RESPONSE:
     def wrapper(func: FUNC_TYPE) -> FIRST_WRAPPER_RESPONSE:
         @wraps(func)
-        def caller(ctx: RequestContext) -> ResponseContext:
+        def caller(ctx: RequestContext) -> Response:
             pre_hook = wkwargs.get("pre_hook")
             if pre_hook:
                 pre_hook(ctx=ctx)

@@ -1,41 +1,44 @@
 from freak.engine import butler, prosecutioner
 from freak.flows.base_flow import base_flow, locator, organizer
-from freak.models import ErrorResponseContext, RequestContext, ResponseContext
+from freak.models.request import RequestContext
+from freak.models.response import (
+    ErrorResponseContext,
+    Response,
+    SuccessResponseContext,
+)
 
 
 @base_flow(name="func_one", order=1)
-def func_one(ctx: RequestContext) -> ResponseContext:
+def func_one(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
     b = ctx.input["b"]
-    return ResponseContext(
-        input=ctx.input, output={"a": a + 1, "b": b + 2}, success=True
+    return SuccessResponseContext(
+        input=ctx.input, output={"a": a + 1, "b": b + 2}
     )
 
 
 @base_flow(name="func_two", order=2)
-def func_two(ctx: RequestContext) -> ResponseContext:
+def func_two(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
     b = ctx.input["b"]
-    return ResponseContext(
+    return SuccessResponseContext(
         input=ctx.input,
         output={"a": a + 2, "b": b + 3},
-        success=True,
     )
 
 
 @base_flow(name="func_three", order=3)
-def func_three(ctx: RequestContext) -> ResponseContext:
+def func_three(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
     b = ctx.input["b"]
-    return ResponseContext(
+    return SuccessResponseContext(
         input=ctx.input,
         output={"a": a + 3, "b": b + 4},
-        success=True,
     )
 
 
 @base_flow(name="func_four", order=4)
-def func_four(ctx: RequestContext) -> ResponseContext:
+def func_four(ctx: RequestContext) -> Response:
     a = ctx.input["a"]
     b = ctx.input["b"]
 
@@ -43,13 +46,12 @@ def func_four(ctx: RequestContext) -> ResponseContext:
     if not c:
         return ErrorResponseContext(
             input=ctx.input,
-            message="Missing input for variable c.",
+            messages=["Missing input for variable c."],
         )
 
-    return ResponseContext(
+    return SuccessResponseContext(
         input=ctx.input,
         output={"a": a + 4, "b": b + 5, "c": c + 6},
-        success=True,
     )
 
 
@@ -96,7 +98,7 @@ def test_base_flow_prosecutioner():
 
     assert responses[3].success == False
     assert responses[3].output == {}
-    assert responses[3].message == "Missing input for variable c."
+    assert responses[3].messages[0] == "Missing input for variable c."
 
     output = prosecutioner(
         module_name=__name__,

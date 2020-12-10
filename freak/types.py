@@ -1,9 +1,10 @@
 from typing import Any, Callable, Dict, List, Tuple
 
-from freak.models import RequestContext, ResponseContext
+from freak.models.request import RequestContext
+from freak.models.response import Response
 
 CONTEXT = Dict[str, Any]
-FUNC_TYPE = Callable[[RequestContext], ResponseContext]
+FUNC_TYPE = Callable[[RequestContext], Response]
 LOCATOR_TYPE = Callable[..., List[Tuple[int, str]]]
 ORGANIZER_TYPE = Callable[..., List[Tuple[int, str, FUNC_TYPE]]]
 
