@@ -2,10 +2,9 @@ from typing import Any, Dict, List
 
 import abc
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
-@dataclass
 class Response(abc.ABC):
 
     input: Dict[str, Any]
@@ -15,41 +14,48 @@ class Response(abc.ABC):
     success: bool
 
 
-@dataclass(frozen=True)
 class SuccessResponseContext(Response):
     """Class for defining structure of response structure."""
 
-    input: Dict[str, Any]
-    output: Dict[str, Any]  # type: ignore
     success: bool = True
     json_errors: str = ""
-    messages: List[str] = field(default_factory=list)
+    messages: List[str] = []
+
+    def __init__(self, input: Dict[str, Any], output: Dict[str, Any]):
+        self.input = input
+        self.output = output
 
 
-@dataclass(frozen=True)
 class ErrorResponseContext(Response):
     """Class for defining structure of error response structure."""
 
-    input: Dict[str, Any]
-    messages: List[str]  # type: ignore
-    json_errors: str = ""
-    output: Dict[str, Any] = field(default_factory=dict)
+    output: Dict[str, Any] = {}
     success: bool = False
+    json_errors: str = ""
+
+    def __init__(self, input: Dict[str, Any], messages: List[str]) -> None:
+        self.input = input
+        self.messages = messages
 
 
-@dataclass
 class InputErrorsResponseContext(Response):
 
-    input: Dict[str, Any]
-    json_errors: str
-    messages: List[str] = field(init=False)
-    output: Dict[str, Any] = field(default_factory=dict)
+    messages: List[str] = []
+    output: Dict[str, Any] = {}
     success: bool = False
 
-    def __post_init__(self) -> None:
-        errors = json.loads(self.json_errors)
-        self.messages = [
-            f"{error['type']} {error['loc'][0]} {error['msg']}"
+    def __init__(self, input: Dict[str, Any], json_errors: str):
+        self.input = input
+        self.json_errors = json_errors
+        self.messages = InputErrorsResponseContext.get_messages(
+            json_errors=json_errors
+        )
+
+    @staticmethod
+    def get_messages(json_errors: str) -> List[str]:
+        errors = json.loads(json_errors)
+        return [
+            f"Variable: {error['loc'][0]} | Type: {error['type']} | Message: {error['msg']}"
             for error in errors
         ]
 

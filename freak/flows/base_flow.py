@@ -4,6 +4,7 @@ from ast import FunctionDef, parse
 from functools import wraps
 from inspect import isfunction
 
+from freak.evaluate import executor
 from freak.models.request import RequestContext
 from freak.models.response import Response
 from freak.types import (
@@ -22,7 +23,12 @@ def base_flow(**wkwargs: Any) -> DECORATOR_RESPONSE:
             if pre_hook:
                 pre_hook(ctx=ctx)
 
-            response = func(ctx=ctx)  # type: ignore
+            response = executor(
+                func=func,
+                ctx=ctx,
+                input_model=wkwargs["input_model"],
+                # output_model=wkwargs["output_model"],
+            )
 
             # response is actually a context object,
             # post hook runs on response of function.

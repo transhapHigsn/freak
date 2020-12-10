@@ -1,14 +1,13 @@
 from freak.engine import butler, prosecutioner
 from freak.flows.base_flow import base_flow, locator, organizer
+from freak.models.input import InputModel, InputModelB
 from freak.models.request import RequestContext
-from freak.models.response import (
-    ErrorResponseContext,
-    Response,
-    SuccessResponseContext,
+from freak.models.response import Response, SuccessResponseContext
+
+
+@base_flow(
+    name="func_one", order=1, input_model=InputModel, output_model=InputModel
 )
-
-
-@base_flow(name="func_one", order=1)
 def func_one(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
     b = ctx.input["b"]
@@ -17,7 +16,9 @@ def func_one(ctx: RequestContext) -> SuccessResponseContext:
     )
 
 
-@base_flow(name="func_two", order=2)
+@base_flow(
+    name="func_two", order=2, input_model=InputModel, output_model=InputModel
+)
 def func_two(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
     b = ctx.input["b"]
@@ -27,7 +28,9 @@ def func_two(ctx: RequestContext) -> SuccessResponseContext:
     )
 
 
-@base_flow(name="func_three", order=3)
+@base_flow(
+    name="func_three", order=3, input_model=InputModel, output_model=InputModel
+)
 def func_three(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
     b = ctx.input["b"]
@@ -37,17 +40,13 @@ def func_three(ctx: RequestContext) -> SuccessResponseContext:
     )
 
 
-@base_flow(name="func_four", order=4)
+@base_flow(
+    name="func_four", order=4, input_model=InputModelB, output_model=InputModelB
+)
 def func_four(ctx: RequestContext) -> Response:
     a = ctx.input["a"]
     b = ctx.input["b"]
-
-    c = ctx.input.get("c")
-    if not c:
-        return ErrorResponseContext(
-            input=ctx.input,
-            messages=["Missing input for variable c."],
-        )
+    c = ctx.input["c"]
 
     return SuccessResponseContext(
         input=ctx.input,
@@ -98,7 +97,10 @@ def test_base_flow_prosecutioner():
 
     assert responses[3].success == False
     assert responses[3].output == {}
-    assert responses[3].messages[0] == "Missing input for variable c."
+    assert (
+        responses[3].messages[0]
+        == "Variable: c | Type: value_error.missing | Message: field required"
+    )
 
     output = prosecutioner(
         module_name=__name__,
