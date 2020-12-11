@@ -22,56 +22,57 @@ Freak is currently under active development. Following test case should give you
 ```python
 from freak.engine import butler, prosecutioner
 from freak.flows.base_flow import base_flow, locator, organizer
-from freak.models import ErrorResponseContext, RequestContext, ResponseContext
+from freak.models.input import InputModel, InputModelB
+from freak.models.request import RequestContext
+from freak.models.response import Response, SuccessResponseContext
 
 
-@base_flow(name="func_one", order=1)
-def func_one(ctx: RequestContext) -> ResponseContext:
+@base_flow(
+    name="func_one", order=1, input_model=InputModel
+)
+def func_one(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
     b = ctx.input["b"]
-    return ResponseContext(
-        input=ctx.input, output={"a": a + 1, "b": b + 2}, success=True
+    return SuccessResponseContext(
+        input=ctx.input, output={"a": a + 1, "b": b + 2}
     )
 
 
-@base_flow(name="func_two", order=2)
-def func_two(ctx: RequestContext) -> ResponseContext:
+@base_flow(
+    name="func_two", order=2, input_model=InputModel
+)
+def func_two(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
     b = ctx.input["b"]
-    return ResponseContext(
+    return SuccessResponseContext(
         input=ctx.input,
         output={"a": a + 2, "b": b + 3},
-        success=True,
     )
 
 
-@base_flow(name="func_three", order=3)
-def func_three(ctx: RequestContext) -> ResponseContext:
+@base_flow(
+    name="func_three", order=3, input_model=InputModel
+)
+def func_three(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
     b = ctx.input["b"]
-    return ResponseContext(
+    return SuccessResponseContext(
         input=ctx.input,
         output={"a": a + 3, "b": b + 4},
-        success=True,
     )
 
 
-@base_flow(name="func_four", order=4)
-def func_four(ctx: RequestContext) -> ResponseContext:
+@base_flow(
+    name="func_four", order=4, input_model=InputModelB
+)
+def func_four(ctx: RequestContext) -> Response:
     a = ctx.input["a"]
     b = ctx.input["b"]
+    c = ctx.input["c"]
 
-    c = ctx.input.get("c")
-    if not c:
-        return ErrorResponseContext(
-            input=ctx.input,
-            message="Missing input for variable c.",
-        )
-
-    return ResponseContext(
+    return SuccessResponseContext(
         input=ctx.input,
         output={"a": a + 4, "b": b + 5, "c": c + 6},
-        success=True,
     )
 
 
@@ -99,7 +100,10 @@ def test_base_flow_prosecutioner():
 
     assert responses[3].success == False
     assert responses[3].output == {}
-    assert responses[3].message == "Missing input for variable c."
+    assert (
+        responses[3].messages[0]
+        == "Variable: c | Type: value_error.missing | Message: field required"
+    )
 
     output = prosecutioner(
         module_name=__name__,
@@ -115,6 +119,7 @@ def test_base_flow_prosecutioner():
     assert output.last_successful_step == 4
     assert output.from_step == 4
     assert output.to_step == 4
+
 ```
 
 <!-- ## Very first steps
@@ -295,7 +300,7 @@ make test && make check-safety && make check-style
 </p>
 </details>
 
-<details>
+<!-- <details>
 <summary>8. Build docker</summary>
 <p>
 
@@ -331,7 +336,7 @@ make clean
 More information [here](https://github.com/transhaphigsn/freak/tree/master/docker).
 
 </p>
-</details>
+</details> -->
 
 <!-- ## 📈 Releases
 
