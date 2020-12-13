@@ -6,7 +6,7 @@ from inspect import isfunction
 
 from freak.evaluate import executor
 from freak.models.request import RequestContext
-from freak.models.response import Response
+from freak.models.response import FetchInputSchemaContext, Response
 from freak.types import (
     DECORATOR_RESPONSE,
     FIRST_WRAPPER_RESPONSE,
@@ -19,6 +19,12 @@ def base_flow(**wkwargs: Any) -> DECORATOR_RESPONSE:
     def wrapper(func: FUNC_TYPE) -> FIRST_WRAPPER_RESPONSE:
         @wraps(func)
         def caller(ctx: RequestContext) -> Response:
+
+            if ctx.input.get("fetch_schema"):
+                return FetchInputSchemaContext(
+                    output={"schema": wkwargs["input_model"].schema()}
+                )
+
             pre_hook = wkwargs.get("pre_hook")
             if pre_hook:
                 pre_hook(ctx=ctx)

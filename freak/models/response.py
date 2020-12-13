@@ -2,7 +2,7 @@ from typing import Any, Dict, List
 
 import abc
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 class Response(abc.ABC):
@@ -58,6 +58,17 @@ class InputErrorsResponseContext(Response):
             f"Variable: {error['loc'][0]} | Type: {error['type']} | Message: {error['msg']}"
             for error in errors
         ]
+
+
+class FetchInputSchemaContext(Response):
+
+    messages: List[str] = field(default_factory=list)
+    success: bool = field(default=True)
+    json_errors: str = field(default="")
+    input: Dict[str, Any] = {"fetch_schema": True}
+
+    def __init__(self, output: Dict[str, Any]):
+        self.output = output
 
 
 @dataclass

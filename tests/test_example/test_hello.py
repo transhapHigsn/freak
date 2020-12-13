@@ -1,5 +1,4 @@
 import pytest
-
 from freak.example import hello
 
 

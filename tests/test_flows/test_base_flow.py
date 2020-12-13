@@ -1,4 +1,4 @@
-from freak.engine import butler, prosecutioner
+from freak.engine import butler, inspector, prosecutioner
 from freak.flows.base_flow import base_flow, locator, organizer
 from freak.models.input import InputModel, InputModelB
 from freak.models.request import RequestContext
@@ -116,3 +116,18 @@ def test_base_flow_prosecutioner():
     assert output.last_successful_step == 4
     assert output.from_step == 4
     assert output.to_step == 4
+
+
+def test_base_flow_fetch_schema():
+    responses = inspector(
+        module_name=__name__,
+        decorator_name="base_flow",
+    )
+
+    input_model_schema = InputModel.schema()
+    input_model_b_schema = InputModelB.schema()
+
+    assert responses[0]["schema"] == input_model_schema
+    assert responses[1]["schema"] == input_model_schema
+    assert responses[2]["schema"] == input_model_schema
+    assert responses[3]["schema"] == input_model_b_schema
