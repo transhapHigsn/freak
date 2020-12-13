@@ -12,12 +12,37 @@
 [![Semantic Versions](https://img.shields.io/badge/%F0%9F%9A%80-semantic%20versions-informational.svg)](https://github.com/transhaphigsn/freak/releases)
 [![License](https://img.shields.io/github/license/transhaphigsn/freak)](https://github.com/transhaphigsn/freak/blob/master/LICENSE)
 
-Freak is a data flow engine.
+**Freak** is a data flow engine.
 </div>
 
 ## About
 
-Freak is currently under active development. Following test case should give you an idea how it implements data flows.
+**Freak** is primarily composed of two components, Engine and Flow, which are further divided into smaller components. Engine is encapsulation of logic on how to read flows and execute them in order of specified definition. Engine does this using components:
+
+- **Factory**
+- **Butler**
+- **Prosecutioner**
+- **Inspector**
+
+Before explaining about these components, it is a good idea to understand what exactly is a flow in a Freak and how it is implemented. A flow is nothing but a set of steps intended to achieve an objective. This objective can be anything that is identifiable as business logic. The implementation of flow is done by defining three components:
+
+- **Flow decorator**, it is used to identify steps of the flow and enforce policies on how it is used or executed.
+
+- **Locator**, it uses flow decorator to locate steps defined in a module (module here is used as reference to single python file). Every flow is required to define one of its own, so that `Butler` can use it to identify and execute the flow.
+
+- **Organizer**, as the name suggests is responsible for organizing the steps of a flow. Every flow id required to define one of its own. Currently, only linear flow is implemented.
+
+Since, we have a basic understanding of what exactly a flow in freak is, let's move on to engine components.
+
+- **Factory** is responsible for collecting `Locator` and `Organizer` for defined flow. It works as input generator for `Butler`.
+
+- **Butler** is responsible for reading python modules, locating steps and organizing them using locator and organizer provided by factory.
+
+- **Prosecutioner** is core component of the engine. It is responsible for executing steps. Currently, it only supports linear flows.
+
+- **Inspector** is used to return input schema for every step defined by the flow. This is intended to be part of view logic of the engine.
+
+**Freak** is currently under active development. Following test case should give you an idea how it implements data flows.
 
 ```python
 from freak.engine import butler, prosecutioner
@@ -214,171 +239,6 @@ poetry run freak --help
 ```bash
 poetry run freak --name Roman
 ``` -->
-
-### Makefile usage
-
-[`Makefile`](https://github.com/transhaphigsn/freak/blob/master/Makefile) contains many functions for fast assembling and convenient work.
-
-<details>
-<summary>1. Download Poetry</summary>
-<p>
-
-```bash
-make download-poetry
-```
-
-</p>
-</details>
-
-<details>
-<summary>2. Install all dependencies and pre-commit hooks</summary>
-<p>
-
-```bash
-make install
-```
-
-If you do not want to install pre-commit hooks, run the command with the NO_PRE_COMMIT flag:
-
-```bash
-make install NO_PRE_COMMIT=1
-```
-
-</p>
-</details>
-
-<details>
-<summary>3. Check the security of your code</summary>
-<p>
-
-```bash
-make check-safety
-```
-
-This command launches a `Poetry` and `Pip` integrity check as well as identifies security issues with `Safety` and `Bandit`. By default, the build will not crash if any of the items fail. But you can set `STRICT=1` for the entire build, or you can configure strictness for each item separately.
-
-```bash
-make check-safety STRICT=1
-```
-
-or only for `safety`:
-
-```bash
-make check-safety SAFETY_STRICT=1
-```
-
-multiple
-
-```bash
-make check-safety PIP_STRICT=1 SAFETY_STRICT=1
-```
-
-> List of flags for `check-safety` (can be set to `1` or `0`): `STRICT`, `POETRY_STRICT`, `PIP_STRICT`, `SAFETY_STRICT`, `BANDIT_STRICT`.
-
-</p>
-</details>
-
-<details>
-<summary>4. Check the codestyle</summary>
-<p>
-
-The command is similar to `check-safety` but to check the code style, obviously. It uses `Black`, `Darglint`, `Isort`, and `Mypy` inside.
-
-```bash
-make check-style
-```
-
-It may also contain the `STRICT` flag.
-
-```bash
-make check-style STRICT=1
-```
-
-> List of flags for `check-style` (can be set to `1` or `0`): `STRICT`, `BLACK_STRICT`, `DARGLINT_STRICT`, `ISORT_STRICT`, `MYPY_STRICT`.
-
-</p>
-</details>
-
-<details>
-<summary>5. Run all the codestyle formaters</summary>
-<p>
-
-Codestyle uses `pre-commit` hooks, so ensure you've run `make install` before.
-
-```bash
-make codestyle
-```
-
-</p>
-</details>
-
-<details>
-<summary>6. Run tests</summary>
-<p>
-
-```bash
-make test
-```
-
-</p>
-</details>
-
-<details>
-<summary>7. Run all the linters</summary>
-<p>
-
-```bash
-make lint
-```
-
-the same as:
-
-```bash
-make test && make check-safety && make check-style
-```
-
-> List of flags for `lint` (can be set to `1` or `0`): `STRICT`, `POETRY_STRICT`, `PIP_STRICT`, `SAFETY_STRICT`, `BANDIT_STRICT`, `BLACK_STRICT`, `DARGLINT_STRICT`, `ISORT_STRICT`, `MYPY_STRICT`.
-
-</p>
-</details>
-
-<!-- <details>
-<summary>8. Build docker</summary>
-<p>
-
-```bash
-make docker
-```
-
-which is equivalent to:
-
-```bash
-make docker VERSION=latest
-```
-
-More information [here](https://github.com/transhaphigsn/freak/tree/master/docker).
-
-</p>
-</details>
-
-<details>
-<summary>9. Cleanup docker</summary>
-<p>
-
-```bash
-make clean_docker
-```
-
-or to remove all build
-
-```bash
-make clean
-```
-
-More information [here](https://github.com/transhaphigsn/freak/tree/master/docker).
-
-</p>
-</details> -->
 
 <!-- ## 📈 Releases
 
