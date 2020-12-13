@@ -124,8 +124,30 @@ def test_base_flow_fetch_schema():
         decorator_name="base_flow",
     )
 
-    input_model_schema = InputModel.schema()
-    input_model_b_schema = InputModelB.schema()
+    input_model_b_schema = {
+        "title": "InputModelB",
+        "description": "Class for defining structure of request data.",
+        "type": "object",
+        "properties": {
+            "a": {"title": "A", "type": "integer"},
+            "b": {"title": "B", "type": "integer"},
+            "c": {"title": "C", "type": "integer"},
+        },
+        "required": ["a", "b", "c"],
+    }
+    input_model_schema = {
+        "title": "InputModel",
+        "description": "Class for defining structure of request data.",
+        "type": "object",
+        "properties": {
+            "a": {"title": "A", "type": "integer"},
+            "b": {"title": "B", "type": "integer"},
+        },
+        "required": ["a", "b"],
+    }
+
+    assert input_model_schema == InputModel.schema()
+    assert input_model_b_schema == InputModelB.schema()
 
     assert responses[0]["schema"] == input_model_schema
     assert responses[1]["schema"] == input_model_schema

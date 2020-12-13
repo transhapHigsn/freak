@@ -122,6 +122,48 @@ def test_base_flow_prosecutioner():
 
 ```
 
+Using above code, it is also possible to generate input schema for every step. Following test case will demonstrate this behaviour.
+
+```python
+
+from freak.engine import inspector
+
+def test_base_flow_fetch_schema():
+    responses = inspector(
+        module_name=__name__,
+        decorator_name="base_flow",
+    )
+
+    input_model_b_schema = {
+        "title": "InputModelB",
+        "description": "Class for defining structure of request data.",
+        "type": "object",
+        "properties": {
+            "a": {"title": "A", "type": "integer"},
+            "b": {"title": "B", "type": "integer"},
+            "c": {"title": "C", "type": "integer"},
+        },
+        "required": ["a", "b", "c"],
+    }
+
+    input_model_schema = {
+        "title": "InputModel",
+        "description": "Class for defining structure of request data.",
+        "type": "object",
+        "properties": {
+            "a": {"title": "A", "type": "integer"},
+            "b": {"title": "B", "type": "integer"},
+        },
+        "required": ["a", "b"],
+    }
+
+    assert responses[0]["schema"] == input_model_schema
+    assert responses[1]["schema"] == input_model_schema
+    assert responses[2]["schema"] == input_model_schema
+    assert responses[3]["schema"] == input_model_b_schema
+
+```
+
 <!-- ## Very first steps
 
 ### Building your package
