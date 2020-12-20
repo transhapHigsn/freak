@@ -42,10 +42,12 @@ Since, we have a basic understanding of what exactly a flow in freak is, let's m
 
 - **Inspector** is used to return input schema for every step defined by the flow. This is intended to be part of view logic of the engine.
 
-**Freak** is currently under active development. Following test case should give you an idea how it implements data flows.
+**Freak** is currently under active development. Following code should give you an idea how it implements data flows.
+
+This is how you define a flow using base flow.
 
 ```python
-from freak.engine import butler, prosecutioner
+from freak.engine import butler, inspector, prosecutioner
 from freak.flows.base_flow import base_flow, locator, organizer
 from freak.models.input import InputModel, InputModelB
 from freak.models.request import RequestContext
@@ -53,7 +55,11 @@ from freak.models.response import Response, SuccessResponseContext
 
 
 @base_flow(
-    name="func_one", order=1, input_model=InputModel
+    name="func_one",
+    order=1,
+    input_model=InputModel,
+    uid="func_one",
+    parent_uid=None,
 )
 def func_one(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
@@ -64,7 +70,11 @@ def func_one(ctx: RequestContext) -> SuccessResponseContext:
 
 
 @base_flow(
-    name="func_two", order=2, input_model=InputModel
+    name="func_two",
+    order=2,
+    input_model=InputModel,
+    uid="func_two",
+    parent_uid="func_one",
 )
 def func_two(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
@@ -76,7 +86,11 @@ def func_two(ctx: RequestContext) -> SuccessResponseContext:
 
 
 @base_flow(
-    name="func_three", order=3, input_model=InputModel
+    name="func_three",
+    order=3,
+    input_model=InputModel,
+    uid="func_three",
+    parent_uid="func_two",
 )
 def func_three(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
@@ -88,7 +102,11 @@ def func_three(ctx: RequestContext) -> SuccessResponseContext:
 
 
 @base_flow(
-    name="func_four", order=4, input_model=InputModelB
+    name="func_four",
+    order=4,
+    input_model=InputModelB,
+    uid="func_four",
+    parent_uid="func_three",
 )
 def func_four(ctx: RequestContext) -> Response:
     a = ctx.input["a"]
@@ -99,8 +117,11 @@ def func_four(ctx: RequestContext) -> Response:
         input=ctx.input,
         output={"a": a + 4, "b": b + 5, "c": c + 6},
     )
+```
 
+Following test case will use above defintion to execute the flow.
 
+```python
 def test_base_flow_prosecutioner():
     output = prosecutioner(
         module_name=__name__,
