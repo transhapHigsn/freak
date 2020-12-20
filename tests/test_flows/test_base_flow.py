@@ -1,12 +1,20 @@
+import collections
+
 from freak.engine import butler, inspector, prosecutioner
 from freak.flows.base_flow import base_flow, locator, organizer
 from freak.models.input import InputModel, InputModelB
 from freak.models.request import RequestContext
 from freak.models.response import Response, SuccessResponseContext
+from freak.types import Step
 
 
 @base_flow(
-    name="func_one", order=1, input_model=InputModel, output_model=InputModel
+    name="func_one",
+    order=1,
+    input_model=InputModel,
+    output_model=InputModel,
+    uid="func_one",
+    parent_uid=None,
 )
 def func_one(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
@@ -17,7 +25,12 @@ def func_one(ctx: RequestContext) -> SuccessResponseContext:
 
 
 @base_flow(
-    name="func_two", order=2, input_model=InputModel, output_model=InputModel
+    name="func_two",
+    order=2,
+    input_model=InputModel,
+    output_model=InputModel,
+    uid="func_two",
+    parent_uid="func_one",
 )
 def func_two(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
@@ -29,7 +42,12 @@ def func_two(ctx: RequestContext) -> SuccessResponseContext:
 
 
 @base_flow(
-    name="func_three", order=3, input_model=InputModel, output_model=InputModel
+    name="func_three",
+    order=3,
+    input_model=InputModel,
+    output_model=InputModel,
+    uid="func_three",
+    parent_uid="func_two",
 )
 def func_three(ctx: RequestContext) -> SuccessResponseContext:
     a = ctx.input["a"]
@@ -41,7 +59,12 @@ def func_three(ctx: RequestContext) -> SuccessResponseContext:
 
 
 @base_flow(
-    name="func_four", order=4, input_model=InputModelB, output_model=InputModelB
+    name="func_four",
+    order=4,
+    input_model=InputModelB,
+    output_model=InputModelB,
+    uid="func_four",
+    parent_uid="func_three",
 )
 def func_four(ctx: RequestContext) -> Response:
     a = ctx.input["a"]
@@ -56,21 +79,22 @@ def func_four(ctx: RequestContext) -> Response:
 
 def test_base_flow():
     assert __name__ == "test_base_flow"
-    funcs = butler(
+    flow = butler(
         module_name=__name__,
         decorator_name="base_flow",
         locator=locator,
         organizer=organizer,
         step=1,
     )
-    assert len(funcs) == 4
+    assert len(flow) == 4
 
-    assert len(funcs[0]) == 3
+    assert isinstance(flow, collections.deque) == True
+    assert isinstance(flow[0], Step) == True
 
-    assert funcs[0][1] == "func_one"
-    assert funcs[1][1] == "func_two"
-    assert funcs[2][1] == "func_three"
-    assert funcs[3][1] == "func_four"
+    assert flow[0].name == "func_one"
+    assert flow[1].name == "func_two"
+    assert flow[2].name == "func_three"
+    assert flow[3].name == "func_four"
 
 
 def test_base_flow_prosecutioner():

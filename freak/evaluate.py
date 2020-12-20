@@ -1,4 +1,4 @@
-from typing import Any, Type
+from typing import Type
 
 from freak.models.input import InputModel
 from freak.models.request import RequestContext

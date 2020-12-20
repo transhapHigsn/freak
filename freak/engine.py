@@ -1,11 +1,11 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 from importlib import import_module
 from inspect import getabsfile
 
 from freak.models.request import FetchSchemaRequestContext, RequestContext
 from freak.models.response import EngineResponse
-from freak.types import FUNC_TYPE, LOCATOR_TYPE, ORGANIZER_TYPE, FactoryResult
+from freak.types import LOCATOR_TYPE, ORGANIZER_TYPE, FactoryResult, Flow
 
 
 def factory(flow_name: str) -> FactoryResult:
@@ -23,14 +23,12 @@ def butler(
     locator: LOCATOR_TYPE,
     organizer: ORGANIZER_TYPE,
     step: int,
-) -> List[Tuple[int, str, FUNC_TYPE]]:
+) -> Flow:
     module = import_module(name=module_name)
     file_path = getabsfile(object=module)
-    decorators = locator(
-        file_path=file_path, decorator=decorator_name, step=step
-    )
-    funcs = organizer(module=module, funcs=decorators)
-    return funcs
+    collector = locator(file_path=file_path, decorator=decorator_name)
+    flow = organizer(module=module, collector=collector, step=step)
+    return flow
 
 
 def prosecutioner(
@@ -40,8 +38,8 @@ def prosecutioner(
     step: Optional[int] = None,
 ) -> EngineResponse:
     tools = factory(flow_name=decorator_name)
-    step = step or 1
-    funcs = butler(
+    step = top_calculator(step=step)
+    flow = butler(
         module_name=module_name,
         decorator_name=decorator_name,
         locator=tools.locator,
@@ -51,19 +49,19 @@ def prosecutioner(
 
     responses = []
     last_successful_step, to_step = step, step
-    for order, name, func in funcs:
-        ctx = RequestContext(input=data, name=name, order=order)
+    for _step in flow:
+        ctx = RequestContext(input=data, name=_step.name, order=_step.order)
 
-        resp_ctx = func(ctx=ctx)  # type: ignore
+        resp_ctx = _step.function(ctx=ctx)  # type: ignore
         responses.append(resp_ctx)
-        to_step = order  # this will refer to last performed step.
+        to_step = _step.order  # this will refer to last performed step.
         if not resp_ctx.success:
             break
 
         data = resp_ctx.input
 
         # this will refer last successfully performed action.
-        last_successful_step = order
+        last_successful_step = _step.order
 
     return EngineResponse(
         responses=responses,
@@ -80,7 +78,7 @@ def inspector(
 ) -> List[Dict[str, Any]]:
     tools = factory(flow_name=decorator_name)
     step = step or 1
-    funcs = butler(
+    flow = butler(
         module_name=module_name,
         decorator_name=decorator_name,
         locator=tools.locator,
@@ -89,12 +87,20 @@ def inspector(
     )
 
     responses = []
-    for order, name, func in funcs:
-        ctx = FetchSchemaRequestContext(name=name, order=order)
+    for _step in flow:
+        ctx = FetchSchemaRequestContext(name=_step.name, order=_step.order)
 
-        resp_ctx = func(ctx=ctx)  # type: ignore
+        resp_ctx = _step.function(ctx=ctx)  # type: ignore
         responses.append(
-            {"name": name, "order": order, "schema": resp_ctx.output["schema"]}
+            {
+                "name": _step.name,
+                "order": _step.order,
+                "schema": resp_ctx.output["schema"],
+            }
         )
 
     return responses
+
+
+def top_calculator(step: Optional[int]) -> int:
+    return step or 1
