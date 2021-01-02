@@ -1,6 +1,6 @@
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Deque, Dict, List, Optional, Tuple, Union
 
-from collections import deque
+# from collections import deque
 from dataclasses import dataclass
 
 from freak.models.request import RequestContext
@@ -32,7 +32,7 @@ class StepCollector:
     predecessor: Dict[Union[str, None], List[str]]
 
 
-Flow = Union[deque, Steps]
+Flow = Union[Deque[Step], Steps, Dict[str, Deque[Step]]]
 
 ORGANIZER_TYPE = Callable[..., Flow]
 LOCATOR_TYPE = Callable[..., StepCollector]

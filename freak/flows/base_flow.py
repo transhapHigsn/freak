@@ -16,6 +16,7 @@ from freak.types import (
     Step,
     StepCollector,
 )
+from freak.utils import generate_hash_for_path
 
 
 def base_flow(**wkwargs: Any) -> DECORATOR_RESPONSE:
@@ -62,7 +63,11 @@ def locator(file_path: str, decorator: str) -> StepCollector:
                 continue
 
             for deco in part.decorator_list:
-                if deco.func.id != decorator:  # type: ignore
+                # ran it some error since i have applied skip decorator
+                # to skip a test case from running. This made me realize there
+                # can be different ways on how a decorator is formed and might
+                # affect functioning of locator.
+                if not hasattr(deco, "func") or deco.func.id != decorator:  # type: ignore
                     continue
 
                 deco_kws = {
@@ -94,6 +99,7 @@ def organizer(module: object, collector: StepCollector, step: int) -> Flow:
     current = None
 
     flow: Deque[Step] = deque()
+    paths = []
     while predecessor.get(current):
         # there is an assumption here, only one child of a step is picked.
         # this does not closely resembe real world scenarios where choice type
@@ -104,6 +110,7 @@ def organizer(module: object, collector: StepCollector, step: int) -> Flow:
         next = successor[current]
         # this is not a viable solution.
         # trying options to see if anyone can solve my problem.
+        paths.append(current)
         if next.order < step:
             continue
 
@@ -111,4 +118,4 @@ def organizer(module: object, collector: StepCollector, step: int) -> Flow:
             next.function = module.__dict__[next.name]
             flow.append(next)
 
-    return flow
+    return {generate_hash_for_path(path=paths): flow}
