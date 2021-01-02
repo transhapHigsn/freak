@@ -27,6 +27,9 @@ def organizer(module: object, collector: StepCollector, step: int) -> Flow:
         flow: Deque[Step] = deque(maxlen=len(path))
         for _step in path:
             next = successor[_step]
+            if next.order < step:
+                continue
+
             if isfunction(object=module.__dict__[next.name]):
                 next.function = module.__dict__[next.name]
                 flow.append(next)

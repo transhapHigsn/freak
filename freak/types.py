@@ -32,7 +32,7 @@ class StepCollector:
     predecessor: Dict[Union[str, None], List[str]]
 
 
-Flow = Union[Deque[Step], Steps, Dict[str, Deque[Step]]]
+Flow = Dict[str, Deque[Step]]
 
 ORGANIZER_TYPE = Callable[..., Flow]
 LOCATOR_TYPE = Callable[..., StepCollector]

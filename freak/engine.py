@@ -35,17 +35,20 @@ def prosecutioner(
     module_name: str,
     decorator_name: str,
     data: Dict[str, Any],
+    flow_identifier: str,
     step: Optional[int] = None,
 ) -> EngineResponse:
     tools = factory(flow_name=decorator_name)
     step = top_calculator(step=step)
-    flow = butler(
+    flow_factory = butler(
         module_name=module_name,
         decorator_name=decorator_name,
         locator=tools.locator,
         organizer=tools.organizer,
         step=step,
     )
+
+    flow = flow_factory[flow_identifier]
 
     responses = []
     last_successful_step, to_step = step, step
@@ -74,11 +77,14 @@ def prosecutioner(
 def inspector(
     module_name: str,
     decorator_name: str,
+    flow_identifier: Optional[str] = None,
     step: Optional[int] = None,
-) -> List[Dict[str, Any]]:
+) -> List[List[Dict[str, Any]]]:
     tools = factory(flow_name=decorator_name)
     step = step or 1
-    flow = butler(
+
+    # flow identifier should be passed here instead.
+    flow_factory = butler(
         module_name=module_name,
         decorator_name=decorator_name,
         locator=tools.locator,
@@ -86,20 +92,25 @@ def inspector(
         step=step,
     )
 
-    responses = []
-    for _step in flow:
-        ctx = FetchSchemaRequestContext(name=_step.name, order=_step.order)
+    schema_responses = []
+    for name, flow in flow_factory.items():
+        if flow_identifier and name != flow_identifier:
+            continue
 
-        resp_ctx = _step.function(ctx=ctx)  # type: ignore
-        responses.append(
-            {
-                "name": _step.name,
-                "order": _step.order,
-                "schema": resp_ctx.output["schema"],
-            }
-        )
+        responses = []
+        for _step in flow:
+            ctx = FetchSchemaRequestContext(name=_step.name, order=_step.order)
 
-    return responses
+            resp_ctx = _step.function(ctx=ctx)  # type: ignore
+            responses.append(
+                {
+                    "name": _step.name,
+                    "order": _step.order,
+                    "schema": resp_ctx.output["schema"],
+                }
+            )
+        schema_responses.append(responses)
+    return schema_responses
 
 
 def top_calculator(step: Optional[int]) -> int:

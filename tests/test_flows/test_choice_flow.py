@@ -78,6 +78,7 @@ def func_four(ctx: RequestContext) -> Response:
     )
 
 
+@pytest.mark.skip
 def test_choice_flow():
     assert __name__ == "test_choice_flow"
     flow = butler(
