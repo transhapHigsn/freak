@@ -1,11 +1,9 @@
-import collections
-
-from freak.engine import butler, inspector, prosecutioner
-from freak.flows.base_flow import base_flow, locator, organizer
+from freak.engine import Engine
+from freak.flows.base_flow import base_flow
 from freak.models.input import InputModel, InputModelB
 from freak.models.request import RequestContext
 from freak.models.response import Response, SuccessResponseContext
-from freak.types import Step
+from freak.types import Flow
 
 
 @base_flow(
@@ -79,39 +77,39 @@ def func_four(ctx: RequestContext) -> Response:
 
 def test_base_flow():
     assert __name__ == "test_base_flow"
-    flow = butler(
-        module_name=__name__,
-        decorator_name="base_flow",
-        locator=locator,
-        organizer=organizer,
-        step=1,
-    )
-    assert len(flow) == 4
 
-    assert isinstance(flow, collections.deque) == True
-    assert isinstance(flow[0], Step) == True
+    executioner = Engine(module_name=__name__, decorator_name="base_flow")
+    flow_defintion = executioner.flow
 
-    assert flow[0].name == "func_one"
-    assert flow[1].name == "func_two"
-    assert flow[2].name == "func_three"
-    assert flow[3].name == "func_four"
+    assert isinstance(flow_defintion, Flow) == True
+    assert flow_defintion.predecessor == {
+        None: ["func_one"],
+        "func_one": ["func_two"],
+        "func_two": ["func_three"],
+        "func_three": ["func_four"],
+    }
 
 
 def test_base_flow_prosecutioner():
-    output = prosecutioner(
-        module_name=__name__,
-        decorator_name="base_flow",
-        data={"a": 4, "b": 7},
-    )
+    executioner = Engine(module_name=__name__, decorator_name="base_flow")
+
+    response = executioner.execute(data={"a": 4, "b": 7}, from_step="func_one")
+
+    output, path_traversed = response
+
+    assert path_traversed == {
+        "last_step": "func_three",
+        "traversed": {
+            "func_one": ["func_two"],
+            "func_two": ["func_three"],
+            "func_three": ["func_four"],
+        },
+    }
 
     responses = output.responses
-    total_steps = output.to_step - output.from_step + 1
 
     assert output.from_step == 1
     assert output.to_step == 4
-
-    assert total_steps == 4
-    assert len(responses) == total_steps
 
     assert output.last_successful_step == 3
 
@@ -126,12 +124,13 @@ def test_base_flow_prosecutioner():
         == "Variable: c | Type: value_error.missing | Message: field required"
     )
 
-    output = prosecutioner(
-        module_name=__name__,
-        decorator_name="base_flow",
+    response = executioner.execute(
         data={"a": 4, "b": 7, "c": 5},
-        step=4,
+        from_step="func_four",
+        executed_steps=path_traversed,
     )
+
+    output, path_traversed = response
 
     responses = output.responses
     assert len(responses) == 1
@@ -141,12 +140,20 @@ def test_base_flow_prosecutioner():
     assert output.from_step == 4
     assert output.to_step == 4
 
+    assert path_traversed == {
+        "last_step": "func_four",
+        "traversed": {
+            "func_one": ["func_two"],
+            "func_two": ["func_three"],
+            "func_three": ["func_four"],
+            "func_four": [],
+        },
+    }
+
 
 def test_base_flow_fetch_schema():
-    responses = inspector(
-        module_name=__name__,
-        decorator_name="base_flow",
-    )
+    executioner = Engine(module_name=__name__, decorator_name="base_flow")
+    responses = executioner.inspect()
 
     input_model_b_schema = {
         "title": "InputModelB",
