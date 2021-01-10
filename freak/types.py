@@ -27,15 +27,13 @@ Steps = List[Step]
 
 
 @dataclass
-class StepCollector:
+class Flow:
     successor: Dict[str, Step]
     predecessor: Dict[Union[str, None], List[str]]
 
 
-Flow = Union[deque, Steps]
-
 ORGANIZER_TYPE = Callable[..., Flow]
-LOCATOR_TYPE = Callable[..., StepCollector]
+LOCATOR_TYPE = Callable[..., Flow]
 
 
 @dataclass
