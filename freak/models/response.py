@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import abc
 import json
@@ -12,6 +12,7 @@ class Response(abc.ABC):
     messages: List[str]
     output: Dict[str, Any]
     success: bool
+    choice: Optional[str]
 
 
 class SuccessResponseContext(Response):
@@ -21,9 +22,15 @@ class SuccessResponseContext(Response):
     json_errors: str = ""
     messages: List[str] = []
 
-    def __init__(self, input: Dict[str, Any], output: Dict[str, Any]):
+    def __init__(
+        self,
+        input: Dict[str, Any],
+        output: Dict[str, Any],
+        choice: Optional[str] = None,
+    ):
         self.input = input
         self.output = output
+        self.choice = choice
 
 
 class ErrorResponseContext(Response):
@@ -32,6 +39,7 @@ class ErrorResponseContext(Response):
     output: Dict[str, Any] = {}
     success: bool = False
     json_errors: str = ""
+    choice: Optional[str] = None
 
     def __init__(self, input: Dict[str, Any], messages: List[str]) -> None:
         self.input = input
@@ -43,6 +51,7 @@ class InputErrorsResponseContext(Response):
     messages: List[str] = []
     output: Dict[str, Any] = {}
     success: bool = False
+    choice: Optional[str] = None
 
     def __init__(self, input: Dict[str, Any], json_errors: str):
         self.input = input
@@ -66,6 +75,7 @@ class FetchInputSchemaContext(Response):
     success: bool = field(default=True)
     json_errors: str = field(default="")
     input: Dict[str, Any] = {"fetch_schema": True}
+    choice: Optional[str] = None
 
     def __init__(self, output: Dict[str, Any]):
         self.output = output
