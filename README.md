@@ -19,9 +19,8 @@
 
 **Freak** is primarily composed of two components, Engine and Flow, which are further divided into smaller components. Engine is encapsulation of logic on how to read flows and execute them in order of specified definition. Engine does this using components:
 
-- **Factory**
 - **Butler**
-- **Prosecutioner**
+- **Executor**
 - **Inspector**
 
 Before explaining about these components, it is a good idea to understand what exactly is a flow in a Freak and how it is implemented. A flow is nothing but a set of steps intended to achieve an objective. This objective can be anything that is identifiable as business logic. The implementation of flow is done by defining three components:
@@ -30,15 +29,11 @@ Before explaining about these components, it is a good idea to understand what e
 
 - **Locator**, it uses flow decorator to locate steps defined in a module (module here is used as reference to single python file). Every flow is required to define one of its own, so that `Butler` can use it to identify and execute the flow.
 
-- **Organizer**, as the name suggests is responsible for organizing the steps of a flow. Every flow id required to define one of its own. Currently, only linear flow is implemented.
-
 Since, we have a basic understanding of what exactly a flow in freak is, let's move on to engine components.
 
-- **Factory** is responsible for collecting `Locator` and `Organizer` for defined flow. It works as input generator for `Butler`.
+- **Butler** is responsible for reading python modules, locating steps and organizing them using locator specified by flow.
 
-- **Butler** is responsible for reading python modules, locating steps and organizing them using locator and organizer provided by factory.
-
-- **Prosecutioner** is core component of the engine. It is responsible for executing steps. Currently, it only supports linear flows.
+- **Executor** is core component of the engine. It is responsible for executing steps. Currently, it only supports linear flows.
 
 - **Inspector** is used to return input schema for every step defined by the flow. This is intended to be part of view logic of the engine.
 
@@ -47,11 +42,11 @@ Since, we have a basic understanding of what exactly a flow in freak is, let's m
 This is how you define a flow using base flow.
 
 ```python
-from freak.engine import butler, inspector, prosecutioner
-from freak.flows.base_flow import base_flow, locator, organizer
+from freak.flows.base_flow import base_flow
 from freak.models.input import InputModel, InputModelB
 from freak.models.request import RequestContext
 from freak.models.response import Response, SuccessResponseContext
+from freak.types import Flow
 
 
 @base_flow(
@@ -122,21 +117,28 @@ def func_four(ctx: RequestContext) -> Response:
 Following test case will use above defintion to execute the flow.
 
 ```python
+from freak.engine import Engine
+
 def test_base_flow_prosecutioner():
-    output = prosecutioner(
-        module_name=__name__,
-        decorator_name="base_flow",
-        data={"a": 4, "b": 7},
-    )
+    executioner = Engine(module_name=__name__, decorator_name="base_flow")
+
+    response = executioner.execute(data={"a": 4, "b": 7}, from_step="func_one")
+
+    output, path_traversed = response
+
+    assert path_traversed == {
+        "last_step": "func_three",
+        "traversed": {
+            "func_one": ["func_two"],
+            "func_two": ["func_three"],
+            "func_three": ["func_four"],
+        },
+    }
 
     responses = output.responses
-    total_steps = output.to_step - output.from_step + 1
 
     assert output.from_step == 1
     assert output.to_step == 4
-
-    assert total_steps == 4
-    assert len(responses) == total_steps
 
     assert output.last_successful_step == 3
 
@@ -151,12 +153,13 @@ def test_base_flow_prosecutioner():
         == "Variable: c | Type: value_error.missing | Message: field required"
     )
 
-    output = prosecutioner(
-        module_name=__name__,
-        decorator_name="base_flow",
+    response = executioner.execute(
         data={"a": 4, "b": 7, "c": 5},
-        step=4,
+        from_step="func_four",
+        executed_steps=path_traversed,
     )
+
+    output, path_traversed = response
 
     responses = output.responses
     assert len(responses) == 1
@@ -166,19 +169,25 @@ def test_base_flow_prosecutioner():
     assert output.from_step == 4
     assert output.to_step == 4
 
+    assert path_traversed == {
+        "last_step": "func_four",
+        "traversed": {
+            "func_one": ["func_two"],
+            "func_two": ["func_three"],
+            "func_three": ["func_four"],
+            "func_four": [],
+        },
+    }
 ```
 
 Using above code, it is also possible to generate input schema for every step. Following test case will demonstrate this behaviour.
 
 ```python
-
-from freak.engine import inspector
+from freak.engine import Engine
 
 def test_base_flow_fetch_schema():
-    responses = inspector(
-        module_name=__name__,
-        decorator_name="base_flow",
-    )
+    executioner = Engine(module_name=__name__, decorator_name="base_flow")
+    responses = executioner.inspect()
 
     input_model_b_schema = {
         "title": "InputModelB",
@@ -191,7 +200,6 @@ def test_base_flow_fetch_schema():
         },
         "required": ["a", "b", "c"],
     }
-
     input_model_schema = {
         "title": "InputModel",
         "description": "Class for defining structure of request data.",
@@ -203,11 +211,13 @@ def test_base_flow_fetch_schema():
         "required": ["a", "b"],
     }
 
+    assert input_model_schema == InputModel.schema()
+    assert input_model_b_schema == InputModelB.schema()
+
     assert responses[0]["schema"] == input_model_schema
     assert responses[1]["schema"] == input_model_schema
     assert responses[2]["schema"] == input_model_schema
     assert responses[3]["schema"] == input_model_b_schema
-
 ```
 
 <!-- ## Very first steps
