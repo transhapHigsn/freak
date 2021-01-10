@@ -24,3 +24,11 @@ class InputModelB(BaseModel):
     a: int
     b: int
     c: int
+
+
+class InputModelC(BaseModel):
+    """Class for defining structure of request data."""
+
+    a: int
+    b: int
+    d: int
