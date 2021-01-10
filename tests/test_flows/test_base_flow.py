@@ -1,8 +1,8 @@
-from freak.engine import Engine
 from freak.flows.base_flow import base_flow
 from freak.models.input import InputModel, InputModelB
 from freak.models.request import RequestContext
 from freak.models.response import Response, SuccessResponseContext
+from freak.provider import EngineProvider
 from freak.types import Flow
 
 
@@ -78,7 +78,9 @@ def func_four(ctx: RequestContext) -> Response:
 def test_base_flow():
     assert __name__ == "test_base_flow"
 
-    executioner = Engine(module_name=__name__, decorator_name="base_flow")
+    engine = EngineProvider(flow_name="base_flow").engine
+
+    executioner = engine(module_name=__name__, decorator_name="base_flow")
     flow_defintion = executioner.flow
 
     assert isinstance(flow_defintion, Flow) == True
@@ -91,7 +93,8 @@ def test_base_flow():
 
 
 def test_base_flow_prosecutioner():
-    executioner = Engine(module_name=__name__, decorator_name="base_flow")
+    engine = EngineProvider(flow_name="base_flow").engine
+    executioner = engine(module_name=__name__, decorator_name="base_flow")
 
     response = executioner.execute(data={"a": 4, "b": 7}, from_step="func_one")
 
@@ -152,7 +155,8 @@ def test_base_flow_prosecutioner():
 
 
 def test_base_flow_fetch_schema():
-    executioner = Engine(module_name=__name__, decorator_name="base_flow")
+    engine = EngineProvider(flow_name="base_flow").engine
+    executioner = engine(module_name=__name__, decorator_name="base_flow")
     responses = executioner.inspect()
 
     input_model_b_schema = {
