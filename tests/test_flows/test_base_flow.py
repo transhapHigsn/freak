@@ -184,7 +184,11 @@ def test_base_flow_fetch_schema():
     assert input_model_schema == InputModel.schema()
     assert input_model_b_schema == InputModelB.schema()
 
-    assert responses[0]["schema"] == input_model_schema
-    assert responses[1]["schema"] == input_model_schema
-    assert responses[2]["schema"] == input_model_schema
-    assert responses[3]["schema"] == input_model_b_schema
+    assert executioner.flow.predecessor == responses["graph"]
+
+    schema_info = responses["schema"]
+
+    assert schema_info["func_one"]["schema"] == input_model_schema
+    assert schema_info["func_two"]["schema"] == input_model_schema
+    assert schema_info["func_three"]["schema"] == input_model_schema
+    assert schema_info["func_four"]["schema"] == input_model_b_schema

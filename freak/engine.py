@@ -5,7 +5,7 @@ from importlib import import_module
 from inspect import getabsfile
 
 from freak.models.request import FetchSchemaRequestContext, RequestContext
-from freak.models.response import EngineResponse
+from freak.models.response import EngineResponse, Response
 from freak.types import LOCATOR_TYPE, Flow, Step
 
 
@@ -50,6 +50,13 @@ class Engine:
         if not step:
             raise Exception("InvalidStepError")
         return step
+
+    def get_next_step_uid(
+        self, resp_ctx: Response, next_steps: List[str]
+    ) -> str:
+        assert len(next_steps) == 1
+
+        return next_steps[0]
 
     def get_following_steps(
         self, from_step: Optional[str], path_traversed: Dict[str, Any]
@@ -111,7 +118,9 @@ class Engine:
             if not next_steps:
                 break
 
-            next_step_uid = next_steps[0]
+            next_step_uid = self.get_next_step_uid(
+                resp_ctx=resp_ctx, next_steps=next_steps
+            )
 
             next_steps = self.get_following_steps(
                 from_step=next_step_uid,
@@ -129,43 +138,21 @@ class Engine:
             path_traversed,
         )
 
-    def inspect(
-        self,
-        from_step: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
-        responses = []
-        path_traversed: Dict[str, Any] = {"traversed": {}, "last_step": ""}
+    def inspect(self) -> Dict[str, Any]:
+        steps = self.flow.predecessor
+        steps_arr = []
+        [steps_arr.extend(value) for value in steps.values()]  # type: ignore
 
-        step = self.get_step(from_step=from_step)
-        next_steps = self.get_following_steps(
-            from_step=from_step,
-            path_traversed=path_traversed,
-        )
-
-        while True:
+        final_response = {}
+        for _step in steps_arr:
+            step = self.get_step(from_step=_step)
             ctx = FetchSchemaRequestContext(name=step.name, order=step.order)
 
             resp_ctx = step.function(ctx=ctx)  # type: ignore
-            responses.append(
-                {
-                    "name": step.name,
-                    "order": step.order,
-                    "schema": resp_ctx.output["schema"],
-                }
-            )
+            final_response[_step] = {
+                "name": step.name,
+                "order": step.order,
+                "schema": resp_ctx.output["schema"],
+            }
 
-            path_traversed["traversed"][step.uid] = next_steps
-            path_traversed["last_step"] = step.uid
-
-            if not next_steps:
-                break
-
-            next_step_uid = next_steps[0]
-
-            next_steps = self.get_following_steps(
-                from_step=next_step_uid,
-                path_traversed=path_traversed,
-            )
-            step = self.get_step(from_step=next_step_uid)
-
-        return responses
+        return {"graph": steps, "schema": final_response}

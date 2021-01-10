@@ -235,9 +235,9 @@ def test_choice_flow_prosecutioner_2():
     }
 
 
-def test_base_flow_fetch_schema():
-    engine = EngineProvider(flow_name="base_flow").engine
-    executioner = engine(module_name=__name__, decorator_name="base_flow")
+def test_choice_flow_fetch_schema():
+    engine = EngineProvider(flow_name="choice_flow").engine
+    executioner = engine(module_name=__name__)
     responses = executioner.inspect()
 
     input_model_b_schema = {
@@ -262,10 +262,28 @@ def test_base_flow_fetch_schema():
         "required": ["a", "b"],
     }
 
+    input_model_c_schema = {
+        "title": "InputModelC",
+        "description": "Class for defining structure of request data.",
+        "type": "object",
+        "properties": {
+            "a": {"title": "A", "type": "integer"},
+            "b": {"title": "B", "type": "integer"},
+            "d": {"title": "D", "type": "integer"},
+        },
+        "required": ["a", "b", "d"],
+    }
+
     assert input_model_schema == InputModel.schema()
     assert input_model_b_schema == InputModelB.schema()
+    assert input_model_c_schema == InputModelC.schema()
 
-    assert responses[0]["schema"] == input_model_schema
-    assert responses[1]["schema"] == input_model_schema
-    assert responses[2]["schema"] == input_model_schema
-    assert responses[3]["schema"] == input_model_b_schema
+    assert executioner.flow.predecessor == responses["graph"]
+
+    schema_info = responses["schema"]
+
+    assert schema_info["func_one"]["schema"] == input_model_schema
+    assert schema_info["func_two"]["schema"] == input_model_schema
+    assert schema_info["func_three"]["schema"] == input_model_schema
+    assert schema_info["func_four"]["schema"] == input_model_b_schema
+    assert schema_info["func_five"]["schema"] == input_model_c_schema

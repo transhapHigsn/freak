@@ -1,3 +1,8 @@
+"""
+    Note: Do not remove base_flow and locator import.
+"""
+
+
 from typing import Any, Dict, List, Optional, Tuple
 
 import copy
@@ -31,7 +36,9 @@ class ChoiceFlowEngine(Engine):
 
         return next_steps
 
-    def get_next_step_uid(self, resp_ctx: Response, next_steps: List[str]):
+    def get_next_step_uid(
+        self, resp_ctx: Response, next_steps: List[str]
+    ) -> str:
         if resp_ctx.choice:
             if resp_ctx.choice not in next_steps:
                 raise Exception("InvalidChoice")
