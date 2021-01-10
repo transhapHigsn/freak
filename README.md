@@ -124,10 +124,11 @@ def func_four(ctx: RequestContext) -> Response:
 Following test case will use above defintion to execute the flow.
 
 ```python
-from freak.engine import Engine
+from freak.provider import EngineProvider
 
 def test_base_flow_prosecutioner():
-    executioner = Engine(module_name=__name__, decorator_name="base_flow")
+    engine = EngineProvider(flow_name="base_flow").engine
+    executioner = engine(module_name=__name__, decorator_name="base_flow")
 
     response = executioner.execute(data={"a": 4, "b": 7}, from_step="func_one")
 
@@ -190,7 +191,7 @@ def test_base_flow_prosecutioner():
 Using above code, it is also possible to generate input schema for every step. Following test case will demonstrate this behaviour.
 
 ```python
-from freak.engine import Engine
+from freak.provider import EngineProvider
 
 def test_base_flow_fetch_schema():
     engine = EngineProvider(flow_name="base_flow").engine
