@@ -1,4 +1,4 @@
-# freak
+# Freak
 
 <div align="center">
 
@@ -33,9 +33,16 @@ Since, we have a basic understanding of what exactly a flow in freak is, let's m
 
 - **Butler** is responsible for reading python modules, locating steps and organizing them using locator specified by flow.
 
-- **Executor** is core component of the engine. It is responsible for executing steps. Currently, it only supports linear flows.
+- **Executor** is core component of the engine. It is responsible for executing steps. Currently, it only supports linear and choice-based flows.
 
 - **Inspector** is used to return input schema for every step defined by the flow. This is intended to be part of view logic of the engine.
+
+## Supported flows
+
+- Linear Flows
+- Choice Flows
+
+## Sample Code
 
 **Freak** is currently under active development. Following code should give you an idea how it implements data flows.
 
@@ -117,10 +124,11 @@ def func_four(ctx: RequestContext) -> Response:
 Following test case will use above defintion to execute the flow.
 
 ```python
-from freak.engine import Engine
+from freak.provider import EngineProvider
 
 def test_base_flow_prosecutioner():
-    executioner = Engine(module_name=__name__, decorator_name="base_flow")
+    engine = EngineProvider(flow_name="base_flow").engine
+    executioner = engine(module_name=__name__, decorator_name="base_flow")
 
     response = executioner.execute(data={"a": 4, "b": 7}, from_step="func_one")
 
@@ -183,10 +191,11 @@ def test_base_flow_prosecutioner():
 Using above code, it is also possible to generate input schema for every step. Following test case will demonstrate this behaviour.
 
 ```python
-from freak.engine import Engine
+from freak.provider import EngineProvider
 
 def test_base_flow_fetch_schema():
-    executioner = Engine(module_name=__name__, decorator_name="base_flow")
+    engine = EngineProvider(flow_name="base_flow").engine
+    executioner = engine(module_name=__name__, decorator_name="base_flow")
     responses = executioner.inspect()
 
     input_model_b_schema = {
@@ -214,10 +223,14 @@ def test_base_flow_fetch_schema():
     assert input_model_schema == InputModel.schema()
     assert input_model_b_schema == InputModelB.schema()
 
-    assert responses[0]["schema"] == input_model_schema
-    assert responses[1]["schema"] == input_model_schema
-    assert responses[2]["schema"] == input_model_schema
-    assert responses[3]["schema"] == input_model_b_schema
+    assert executioner.flow.predecessor == responses["graph"]
+
+    schema_info = responses["schema"]
+
+    assert schema_info["func_one"]["schema"] == input_model_schema
+    assert schema_info["func_two"]["schema"] == input_model_schema
+    assert schema_info["func_three"]["schema"] == input_model_schema
+    assert schema_info["func_four"]["schema"] == input_model_b_schema
 ```
 
 <!-- ## Very first steps
