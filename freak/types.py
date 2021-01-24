@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from collections import deque
 from dataclasses import dataclass
@@ -30,6 +30,7 @@ Steps = List[Step]
 class Flow:
     successor: Dict[str, Step]
     predecessor: Dict[Union[str, None], List[str]]
+    parallels: Set[str]
 
 
 ORGANIZER_TYPE = Callable[..., Flow]
