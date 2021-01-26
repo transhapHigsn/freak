@@ -12,8 +12,10 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 import copy
+from concurrent.futures import ThreadPoolExecutor
 
 from freak.engine import Engine
+from freak.executor import submit_and_execute_single_job
 from freak.flows.base_flow import base_flow as parallel_flow
 from freak.flows.locators import Locator
 from freak.models.request import RequestContext
@@ -36,16 +38,30 @@ class ParallelFlowEngine(Engine):
         }
         """
         step_graph = self.flow.predecessor
-        next_steps = step_graph[for_step]
+
+        next_steps = []
+        for steps in step_graph.values():
+            if for_step in steps:
+                next_steps = steps
+                break
 
         if self.flow.parallels:
             parallel_steps = set(next_steps).intersection(self.flow.parallels)
+            parallel_steps = parallel_steps.difference({for_step})
             return list(parallel_steps)
 
         return []
 
-    def execute_parallels(self):
-        pass
+    def execute_parallels(self, for_step, data, executed_steps):
+        parallels = self.get_parallels(for_step=for_step)
+
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            for parallel in parallels:
+                submit_and_execute_single_job(
+                    executor=executor,
+                    func=self.execute,
+                    job_args=(parallel, data, executed_steps),
+                )
 
     def get_following_steps(
         self, from_step: Optional[str], path_traversed: Dict[str, Any]
@@ -109,6 +125,10 @@ class ParallelFlowEngine(Engine):
             resp_ctx = step.function(ctx=ctx)  # type: ignore
             responses.append(resp_ctx)
             to_step = step.order  # this will refer to last performed step.
+
+            self.execute_parallels(
+                for_step=step.name, data=data, executed_steps=path_traversed
+            )
             if not resp_ctx.success:
                 break
 
