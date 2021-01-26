@@ -15,12 +15,12 @@ import copy
 from concurrent.futures import ThreadPoolExecutor
 
 from freak.engine import Engine
-from freak.executor import submit_and_execute_single_job
 from freak.flows.base_flow import base_flow as parallel_flow
 from freak.flows.locators import Locator
 from freak.models.request import RequestContext
 from freak.models.response import EngineResponse, Response
 from freak.types import Flow
+from freak.utils import submit_and_execute_single_job
 
 
 class ParallelFlowEngine(Engine):
