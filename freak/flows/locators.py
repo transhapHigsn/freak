@@ -1,5 +1,9 @@
+from typing import Any
+
+import inspect
 from ast import FunctionDef, parse
 from collections import defaultdict
+from importlib import import_module
 from inspect import isfunction
 
 from freak.types import Flow, Step
@@ -7,6 +11,13 @@ from freak.types import Flow, Step
 """
     Inherit this class to implement new locator for your custom flow decorator.
 """
+
+COLLECT_ATTRIBUTES = [
+    "uid",
+    "parent_uid",
+    "is_parallel",
+    "order",
+]
 
 
 class Locator:
@@ -22,7 +33,8 @@ class Locator:
         with open(file=file_path, mode="rt") as file:
             tree = parse(source=file.read(), filename=file_path)
             predecessor = defaultdict(list)
-            successor = {}
+            successor = dict()
+            parallel_uids = set()
             for part in tree.body:
                 if not (isinstance(part, FunctionDef) and part.decorator_list):
                     continue
@@ -34,7 +46,7 @@ class Locator:
                     deco_kws = {
                         kw.arg: kw.value.value
                         for kw in deco.keywords  # type: ignore
-                        if kw.arg in ("order", "uid", "parent_uid")
+                        if kw.arg in COLLECT_ATTRIBUTES
                     }
 
                     parent_uid = deco_kws.get("parent_uid", "")
@@ -46,11 +58,16 @@ class Locator:
                     ):
                         raise Exception("InvalidFlowDefintiionError")
 
-                    predecessor[parent_uid].append(uid)
+                    is_parallel_step = deco_kws.get("is_parallel", False)
+                    # if parallel step start new flow.
 
                     func = self.loaded_module.__dict__[part.name]
                     if not isfunction(object=func):
                         continue
+
+                    predecessor[parent_uid].append(uid)
+                    if is_parallel_step:
+                        parallel_uids.add(uid)
 
                     successor[uid] = Step(
                         uid=uid,
@@ -60,4 +77,22 @@ class Locator:
                         function=func,
                     )
 
-        return Flow(predecessor=predecessor, successor=successor)
+        return Flow(
+            predecessor=predecessor,
+            successor=successor,
+            parallels=parallel_uids,
+        )
+
+
+class LocatorProvider:
+    def __init__(self, flow_name: str) -> None:
+        look_here = f"freak.flows.{flow_name}"
+        module = import_module(name=look_here)
+        self.engine = self.find_locator(module=module)
+
+    def find_locator(self, module: object) -> Any:
+        for _, cls in inspect.getmembers(module, inspect.isclass):
+            if issubclass(cls, Locator) and cls != Locator:
+                return cls
+        else:
+            return Locator

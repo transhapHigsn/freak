@@ -50,4 +50,8 @@ def base_flow(**wkwargs: Any) -> DECORATOR_RESPONSE:
 
 def locator(module: object, file_path: str, decorator: str) -> Flow:
     loc = Locator(module=module, file_path=file_path, decorator=decorator)
-    return loc.locate()
+    flow = loc.locate()
+
+    # probably raise a better error here.
+    assert flow.parallels == set()
+    return flow

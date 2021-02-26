@@ -7,6 +7,7 @@ from inspect import getabsfile
 from freak.models.request import FetchSchemaRequestContext, RequestContext
 from freak.models.response import EngineResponse, Response
 from freak.types import LOCATOR_TYPE, Flow, Step
+from freak.utils import validate_flow
 
 
 class Engine:
@@ -21,6 +22,11 @@ class Engine:
             module_name=module_name,
             decorator_name=decorator_name,
         )
+
+        is_flow_valid = validate_flow(step_graph=self.flow.predecessor)
+        if not is_flow_valid:
+            raise Exception("FlowShouldBeDAGError")
+
         self.module_name = module_name
         self.decorator_name = decorator_name
 
